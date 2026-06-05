@@ -1,0 +1,136 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "Личный кабинет";
+}
+
+<div class="page profile-page">
+    <header class="top-bar">
+        <a asp-controller="Home" asp-action="Index" class="btn-text back-link">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            На главную
+        </a>
+    </header>
+
+    @if (Model.IsModerator)
+    {
+        <section class="cabinet-card mod-entry">
+            <h2 class="cabinet-title">Модерация</h2>
+            <p class="cabinet-desc">Проверка жалоб на отзывы и публикация на главной.</p>
+            <a asp-controller="Moderation" asp-action="Index" class="btn-primary full" style="text-align:center;text-decoration:none;display:block;">Открыть панель модерации</a>
+        </section>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <p class="toast success">@Model.SuccessMessage</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="toast error">@Model.ErrorMessage</p>
+    }
+
+    <section class="profile-hero">
+        <div class="avatar avatar-lg @Model.AvatarToneClass">@Model.AuthorInitial</div>
+        <h1 class="profile-name">@Model.DisplayName</h1>
+        <p class="profile-login">Логин: @Model.UserName</p>
+        <p class="profile-meta">Ваших отзывов: <strong>@Model.MyReviewsCount</strong></p>
+    </section>
+
+    <section class="cabinet-card">
+        <h2 class="cabinet-title">Профиль</h2>
+        <p class="cabinet-desc">Измените никнейм — он будет отображаться в отзывах и в шапке сайта.</p>
+        <form asp-action="UpdateProfile" method="post" class="cabinet-form">
+            @Html.AntiForgeryToken()
+            <label class="field">
+                <span>Никнейм</span>
+                <input type="text" name="DisplayName" value="@Model.DisplayName" required maxlength="50" placeholder="Ваш никнейм" />
+            </label>
+            <button type="submit" class="btn-primary full">Сохранить никнейм</button>
+        </form>
+    </section>
+
+    <section class="cabinet-card">
+        <h2 class="cabinet-title">Настройки сайта</h2>
+        <form asp-action="UpdateSettings" method="post" class="cabinet-form settings-form">
+            @Html.AntiForgeryToken()
+            <label class="toggle-field">
+                <input type="checkbox" name="CompactReviews" value="true" @(Model.CompactReviews ? "checked" : "") />
+                <span class="toggle-ui"></span>
+                <span class="toggle-text">
+                    <strong>Компактный список отзывов</strong>
+                    <small>Меньше отступов на главной странице</small>
+                </span>
+            </label>
+            <button type="submit" class="btn-primary full">Сохранить настройки</button>
+        </form>
+    </section>
+
+    <section class="cabinet-card">
+        <h2 class="cabinet-title">Безопасность</h2>
+        <form asp-action="ChangePassword" method="post" class="cabinet-form">
+            @Html.AntiForgeryToken()
+            <label class="field">
+                <span>Текущий пароль</span>
+                <div class="password-wrap">
+                    <input type="password" name="CurrentPassword" required autocomplete="current-password" />
+                    <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                </div>
+            </label>
+            <label class="field">
+                <span>Новый пароль</span>
+                <div class="password-wrap">
+                    <input type="password" name="NewPassword" required autocomplete="new-password" />
+                    <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                </div>
+            </label>
+            <label class="field">
+                <span>Подтвердите пароль</span>
+                <div class="password-wrap">
+                    <input type="password" name="ConfirmPassword" required autocomplete="new-password" />
+                    <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                </div>
+            </label>
+            <button type="submit" class="btn-secondary full">Сменить пароль</button>
+        </form>
+    </section>
+
+    <section class="cabinet-card cabinet-danger-zone">
+        <h2 class="cabinet-title">Сессия</h2>
+        <p class="cabinet-desc">Выйти из аккаунта на этом устройстве.</p>
+        <form asp-action="Logout" method="post" id="logoutForm">
+            @Html.AntiForgeryToken()
+            <button type="button" class="btn-danger full" id="logoutBtn">Выйти из аккаунта</button>
+        </form>
+    </section>
+</div>
+
+<div id="logoutModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog modal-sm" role="dialog">
+        <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+        <h2 class="modal-title center">Выйти из аккаунта?</h2>
+        <p class="modal-desc">Вы уверены? Чтобы снова оставлять отзывы, нужно будет войти.</p>
+        <div class="modal-actions-row">
+            <button type="button" class="btn-secondary" data-close-modal>Отмена</button>
+            <button type="button" class="btn-danger" id="confirmLogout">Выйти</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            const m = document.getElementById('logoutModal');
+            if (m) { m.classList.add('open'); m.setAttribute('aria-hidden', 'false'); }
+        });
+        document.querySelectorAll('#logoutModal [data-close-modal]').forEach(el => {
+            el.addEventListener('click', () => {
+                const m = document.getElementById('logoutModal');
+                if (m) { m.classList.remove('open'); m.setAttribute('aria-hidden', 'true'); }
+            });
+        });
+        document.getElementById('confirmLogout')?.addEventListener('click', () => {
+            document.getElementById('logoutForm')?.submit();
+        });
+    </script>
+}

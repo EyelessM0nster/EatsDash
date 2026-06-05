@@ -1,0 +1,85 @@
+@model ModerationIndexViewModel
+@{
+    ViewData["Title"] = "Модерация";
+}
+
+<div class="page moderation-page">
+    <header class="top-bar moderation-header">
+        <a asp-controller="Home" asp-action="Index" class="btn-text back-link">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            На главную
+        </a>
+        <a asp-controller="Account"
+           asp-action="Profile"
+           class="avatar account-orb @Model.UserAvatarToneClass"
+           title="@Model.UserName"
+           aria-label="Личный кабинет: @Model.UserName">@Model.UserInitial</a>
+    </header>
+
+    @if (TempData["ModSuccess"] is string ok && !string.IsNullOrEmpty(ok))
+    {
+        <p class="toast success">@ok</p>
+    }
+    @if (TempData["ModMessage"] is string msg && !string.IsNullOrEmpty(msg))
+    {
+        <p class="toast error">@msg</p>
+    }
+
+    <section class="moderation-hero">
+        <h1 class="moderation-title">Панель модерации</h1>
+        <p class="moderation-sub">На проверке: <strong>@Model.PendingCount</strong></p>
+    </section>
+
+    @if (!Model.PendingReviews.Any())
+    {
+        <div class="cabinet-card empty-mod">
+            <p class="cabinet-desc" style="margin:0;text-align:center;">Нет отзывов в очереди. Всё чисто.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.PendingReviews)
+        {
+            <article class="cabinet-card mod-card">
+                <div class="mod-card-head">
+                    <div>
+                        <span class="mod-author">@item.AuthorName</span>
+                        <span class="mod-meta">· @item.CreatedAt.ToString("d MMMM yyyy HH:mm", new System.Globalization.CultureInfo("ru-RU"))</span>
+                    </div>
+                    <div class="stars" aria-label="Оценка @item.Rating">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            <span class="star @(i <= item.Rating ? "filled" : "")">★</span>
+                        }
+                    </div>
+                </div>
+                <p class="mod-courier">Курьер: <strong>@item.CourierNickname</strong></p>
+                <p class="mod-text">@item.Text</p>
+                @if (item.ReportLines.Any())
+                {
+                    <div class="mod-reports">
+                        <span class="mod-reports-title">Жалобы:</span>
+                        <ul>
+                            @foreach (var line in item.ReportLines)
+                            {
+                                <li>@line</li>
+                            }
+                        </ul>
+                    </div>
+                }
+                <div class="mod-actions">
+                    <form asp-action="Approve" method="post" class="mod-action-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.ReviewId" />
+                        <button type="submit" class="btn-primary">Одобрить</button>
+                    </form>
+                    <form asp-action="Reject" method="post" class="mod-action-form" onsubmit="return confirm('Удалить отзыв безвозвратно?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.ReviewId" />
+                        <button type="submit" class="btn-danger">Отклонить</button>
+                    </form>
+                </div>
+            </article>
+        }
+    }
+</div>

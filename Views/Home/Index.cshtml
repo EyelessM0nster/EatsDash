@@ -1,0 +1,413 @@
+@model HomeIndexViewModel
+@{
+    ViewData["Title"] = "Книга отзывов";
+    var authTab = TempData["AuthTab"] as string ?? "login";
+    var authError = TempData["AuthError"] as string;
+    var reviewError = TempData["ReviewError"] as string;
+    var reportError = TempData["ReportError"] as string;
+    var reportSuccess = TempData["ReportSuccess"] as string;
+    var openAuth = !string.IsNullOrEmpty(authError);
+    var openReport = !string.IsNullOrEmpty(reportError) || !string.IsNullOrEmpty(reportSuccess);
+    var homeAlert = TempData["HomeAlert"] as string;
+    var avgText = Model.AverageRating.HasValue
+        ? Model.AverageRating.Value.ToString("0.0")
+        : "—";
+}
+
+<div class="page @(Model.CompactReviews ? "compact-reviews" : "")">
+    <header class="top-bar">
+        @if (Model.IsAuthenticated)
+        {
+            @if (Model.IsModerator)
+            {
+                <a asp-controller="Moderation" asp-action="Index" class="btn-text mod-link">Модерация</a>
+            }
+            <a asp-controller="Account"
+               asp-action="Profile"
+               class="avatar account-orb @Model.UserAvatarToneClass"
+               title="@Model.UserName"
+               aria-label="Личный кабинет: @Model.UserName">@Model.UserInitial</a>
+        }
+        else
+        {
+            <button type="button" class="btn-text" data-open-modal="authModal">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Войти
+            </button>
+        }
+    </header>
+
+    @if (!string.IsNullOrEmpty(homeAlert))
+    {
+        <p class="toast error">@homeAlert</p>
+    }
+
+    @if (!string.IsNullOrEmpty(reportSuccess))
+    {
+        <p class="toast success">@reportSuccess</p>
+    }
+
+    <main class="hero">
+        <h1 class="logo">EATSDASH</h1>
+        <p class="subtitle">Книга отзывов</p>
+        <p class="tagline">Читайте отзывы других о нашей доствке и оставляйте свои :D</p>
+
+        <section class="stats-card">
+            <h2 class="stats-title">Статистика</h2>
+            <div class="stats-row">
+                <div class="stat">
+                    <span class="stat-label">Всего отзывов:</span>
+                    <span class="stat-value">@Model.TotalReviews</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Средняя оценка:</span>
+                    <span class="stat-value">@avgText</span>
+                </div>
+            </div>
+            @if (Model.IsAuthenticated)
+            {
+                <button type="button" class="btn-primary" data-open-modal="reviewModal">Добавить отзыв</button>
+            }
+            else
+            {
+                <button type="button" class="btn-primary" data-open-modal="authModal">Добавить отзыв</button>
+            }
+        </section>
+
+        <section class="reviews-section">
+            <h2 class="section-heading">Последние отзывы:</h2>
+
+            @if (!Model.RecentReviews.Any())
+            {
+                <div class="empty-state">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <p>Отзывов пока нет. Будьте первым!</p>
+                </div>
+            }
+            else
+            {
+                <div class="reviews-list">
+                    @foreach (var review in Model.RecentReviews)
+                    {
+                        <article class="review-card" data-review-id="@review.Id">
+                            <div class="review-header">
+                                <div class="review-user">
+                                    <div class="avatar @review.AvatarToneClass">@review.AuthorInitial</div>
+                                    <div>
+                                        <div class="author-name">@review.AuthorName</div>
+                                        <span class="courier-tag">Курьер: @review.CourierNickname</span>
+                                        <time class="review-date" datetime="@review.CreatedAt.ToString("o")">
+                                            @review.CreatedAt.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"))
+                                        </time>
+                                    </div>
+                                </div>
+                                <div class="stars" aria-label="Оценка @review.Rating из 5">
+                                    @for (var i = 1; i <= 5; i++)
+                                    {
+                                        <span class="star @(i <= review.Rating ? "filled" : "")">★</span>
+                                    }
+                                </div>
+                            </div>
+                            <p class="review-text">@review.Text</p>
+                            <footer class="review-footer">
+                                @if (Model.IsAuthenticated)
+                                {
+                                    <button type="button"
+                                            class="pill-btn react-btn like @(review.UserReaction == "like" ? "active-like" : "")"
+                                            data-review-id="@review.Id"
+                                            data-reaction="like"
+                                            aria-pressed="@(review.UserReaction == "like")">
+                                        <span class="react-icon">👍</span>
+                                        <span class="react-count">@review.LikesCount</span>
+                                    </button>
+                                    <button type="button"
+                                            class="pill-btn react-btn dislike @(review.UserReaction == "dislike" ? "active-dislike" : "")"
+                                            data-review-id="@review.Id"
+                                            data-reaction="dislike"
+                                            aria-pressed="@(review.UserReaction == "dislike")">
+                                        <span class="react-icon">👎</span>
+                                        <span class="react-count">@review.DislikesCount</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="pill-btn muted">👍 @review.LikesCount</span>
+                                    <span class="pill-btn muted">👎 @review.DislikesCount</span>
+                                }
+
+                                @if (review.CanEdit || review.CanReport || review.CanModerate)
+                                {
+                                    <details class="review-menu">
+                                        <summary aria-label="Меню">⋯</summary>
+                                        <div class="menu-panel@(review.CanModerate ? " menu-panel--moderator" : "")">
+                                            @if (review.CanModerate)
+                                            {
+                                                    <form asp-action="DeleteReview" method="post" class="menu-form">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@review.Id" />
+                                                        <button type="submit" class="menu-item danger" onclick="return confirm('Удалить отзыв?');">Удалить отзыв</button>
+                                                    </form>
+                                                    @if (review.CanBlockAuthor)
+                                                    {
+                                                        <div class="menu-divider" role="separator"></div>
+                                                        <form asp-action="BlockAuthor" method="post" class="menu-form">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="authorId" value="@review.AuthorId" />
+                                                            <button type="submit"
+                                                                    class="menu-item block"
+                                                                    onclick="return confirm('Заблокировать пользователя @review.AuthorName? Он не сможет войти на сайт.');">
+                                                                Заблокировать пользователя
+                                                            </button>
+                                                        </form>
+                                                    }
+                                            }
+                                            else if (review.CanEdit)
+                                            {
+                                                <button type="button"
+                                                        class="menu-item"
+                                                        data-open-edit
+                                                        data-review-id="@review.Id"
+                                                        data-author-name="@review.AuthorName"
+                                                        data-rating="@review.Rating"
+                                                        data-courier-id="@review.CourierId"
+                                                        data-text='@System.Text.Json.JsonSerializer.Serialize(review.Text)'>
+                                                    Изменить
+                                                </button>
+                                                <form asp-action="DeleteReview" method="post" class="menu-form">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@review.Id" />
+                                                    <button type="submit" class="menu-item danger" onclick="return confirm('Удалить отзыв?');">Удалить</button>
+                                                </form>
+                                            }
+                                            @if (review.CanReport)
+                                            {
+                                                <button type="button"
+                                                        class="menu-item warn"
+                                                        data-open-report
+                                                        data-review-id="@review.Id">
+                                                    Пожаловаться
+                                                </button>
+                                            }
+                                        </div>
+                                    </details>
+                                }
+                            </footer>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    </main>
+
+    <button type="button"
+            class="help-fab"
+            data-open-modal="helpModal"
+            title="Справка (F1)"
+            aria-label="Помощь, открыть справку">
+        <svg class="help-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span class="help-fab-label">Помощь</span>
+    </button>
+</div>
+
+<!-- Auth -->
+<div id="authModal" class="modal @(openAuth ? "open" : "")" aria-hidden="@(!openAuth).ToString().ToLower()">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog" role="dialog" aria-labelledby="authTitle">
+        <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+        <h2 id="authTitle" class="modal-title">@(authTab == "register" ? "Регистрация" : "Вход")</h2>
+        <div class="tabs">
+            <button type="button" class="tab @(authTab == "login" ? "active" : "")" data-auth-tab="login">Вход</button>
+            <button type="button" class="tab @(authTab == "register" ? "active" : "")" data-auth-tab="register">Регистрация</button>
+        </div>
+        @if (!string.IsNullOrEmpty(authError))
+        {
+            <p class="form-error">@authError</p>
+        }
+        <div class="tab-panel @(authTab == "login" ? "active" : "")" data-panel="login">
+            <form asp-controller="Account" asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <label class="field">
+                    <span>Имя пользователя</span>
+                    <input type="text" name="UserName" placeholder="Введите имя" required autocomplete="username" />
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <div class="password-wrap">
+                        <input type="password" name="Password" placeholder="Введите пароль" required autocomplete="current-password" />
+                        <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                    </div>
+                </label>
+                <button type="submit" class="btn-primary full">Войти</button>
+            </form>
+            <p class="modal-footer-link">Нет аккаунта? <button type="button" class="link" data-auth-tab="register">Зарегистрироваться</button></p>
+        </div>
+        <div class="tab-panel @(authTab == "register" ? "active" : "")" data-panel="register">
+            <form asp-controller="Account" asp-action="Register" method="post">
+                @Html.AntiForgeryToken()
+                <label class="field">
+                    <span>Имя пользователя</span>
+                    <input type="text" name="UserName" placeholder="Введите имя" required autocomplete="username" />
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <div class="password-wrap">
+                        <input type="password" name="Password" placeholder="Введите пароль" required autocomplete="new-password" />
+                        <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                    </div>
+                </label>
+                <label class="field">
+                    <span>Подтвердите пароль</span>
+                    <div class="password-wrap">
+                        <input type="password" name="ConfirmPassword" placeholder="Повторите пароль" required autocomplete="new-password" />
+                        <button type="button" class="toggle-password" aria-label="Показать пароль"></button>
+                    </div>
+                </label>
+                <button type="submit" class="btn-primary full">Зарегистрироваться</button>
+            </form>
+            <p class="modal-footer-link">Уже есть аккаунт? <button type="button" class="link" data-auth-tab="login">Войти</button></p>
+        </div>
+    </div>
+</div>
+
+<!-- New review -->
+@if (Model.IsAuthenticated)
+{
+    <div id="reviewModal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-dialog" role="dialog" aria-labelledby="reviewTitle">
+            <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+            <h2 id="reviewTitle" class="modal-title">Новый отзыв</h2>
+            @if (!string.IsNullOrEmpty(reviewError))
+            {
+                <p class="form-error">@reviewError</p>
+            }
+            <form asp-action="CreateReview" method="post">
+                @Html.AntiForgeryToken()
+                <label class="field">
+                    <span>Ваше имя</span>
+                    <input type="text" name="AuthorName" value="@Model.UserName" placeholder="Введите имя" required maxlength="100" />
+                </label>
+                <label class="field">
+                    <span>Курьер</span>
+                    <div class="select-wrap">
+                        <select name="CourierId" class="field-select" required>
+                            <option value="" disabled selected hidden>Выберите курьера...</option>
+                            @foreach (var courier in Model.Couriers)
+                            {
+                                <option value="@courier.Id">@courier.Nickname</option>
+                            }
+                        </select>
+                    </div>
+                </label>
+                <div class="field">
+                    <span>Оценка доставки</span>
+                    <input type="hidden" name="Rating" class="rating-input" value="5" />
+                    <div class="star-picker" data-rating-picker>
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            <button type="button" class="star-btn filled" data-rating="@i">★</button>
+                        }
+                    </div>
+                </div>
+                <label class="field">
+                    <span>Ваш отзыв</span>
+                    <textarea name="Text" rows="4" placeholder="Расскажите о вашем опыте..." required maxlength="2000"></textarea>
+                </label>
+                <button type="submit" class="btn-primary full">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editReviewModal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-dialog" role="dialog" aria-labelledby="editReviewTitle">
+            <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+            <h2 id="editReviewTitle" class="modal-title">Изменить отзыв</h2>
+            <form asp-action="EditReview" method="post" id="editReviewForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editReviewId" />
+                <label class="field">
+                    <span>Ваше имя</span>
+                    <input type="text" name="AuthorName" id="editAuthorName" required maxlength="100" />
+                </label>
+                <label class="field">
+                    <span>Курьер</span>
+                    <div class="select-wrap">
+                        <select name="CourierId" id="editCourierId" class="field-select" required>
+                            @foreach (var courier in Model.Couriers)
+                            {
+                                <option value="@courier.Id">@courier.Nickname</option>
+                            }
+                        </select>
+                    </div>
+                </label>
+                <div class="field">
+                    <span>Оценка доставки</span>
+                    <input type="hidden" name="Rating" class="rating-input" id="editRatingInput" value="5" />
+                    <div class="star-picker" data-rating-picker id="editStarPicker">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            <button type="button" class="star-btn" data-rating="@i">★</button>
+                        }
+                    </div>
+                </div>
+                <label class="field">
+                    <span>Ваш отзыв</span>
+                    <textarea name="Text" id="editReviewText" rows="4" required maxlength="2000"></textarea>
+                </label>
+                <button type="submit" class="btn-primary full">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="reportModal" class="modal @(openReport ? "open" : "")" aria-hidden="@(!openReport).ToString().ToLower()">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-dialog" role="dialog" aria-labelledby="reportTitle">
+            <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+            <h2 id="reportTitle" class="modal-title">Пожаловаться на отзыв</h2>
+            @if (!string.IsNullOrEmpty(reportError))
+            {
+                <p class="form-error">@reportError</p>
+            }
+            <form asp-action="ReportReview" method="post" id="reportForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReviewId" id="reportReviewId" />
+                <label class="field">
+                    <span>Причина жалобы</span>
+                    <div class="select-wrap">
+                        <select name="ReasonKey" id="reportReasonKey" class="field-select" required>
+                            <option value="" disabled selected hidden>Выберите причину...</option>
+                            <option value="spam">Спам</option>
+                            <option value="insult">Оскорбления</option>
+                            <option value="fake">Недостоверная информация</option>
+                            <option value="other">Другое (своя причина)</option>
+                        </select>
+                    </div>
+                </label>
+                <label class="field hidden" id="customReasonField">
+                    <span>Своя причина</span>
+                    <input type="text" name="CustomReason" id="reportCustomReason" maxlength="200" placeholder="Опишите причину..." />
+                </label>
+                <label class="field">
+                    <span>Дополнительный комментарий (необязательно)</span>
+                    <textarea name="Comment" rows="3" placeholder="Опишите проблему подробнее..." maxlength="500"></textarea>
+                </label>
+                <button type="submit" class="btn-warning full">Отправить жалобу</button>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.body.dataset.authTab = '@authTab';
+        document.body.dataset.isAuthenticated = '@Model.IsAuthenticated.ToString().ToLower()';
+        @if (openAuth) { <text>document.body.dataset.openAuth = 'true';</text> }
+        @if (!string.IsNullOrEmpty(reviewError)) { <text>document.body.dataset.openReview = 'true';</text> }
+        @if (openReport) { <text>document.body.dataset.openReport = 'true';</text> }
+    </script>
+}

@@ -1,0 +1,116 @@
+@model HelpViewModel
+
+<div id="helpModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog modal-dialog--help" role="dialog" aria-labelledby="helpTitle" aria-modal="true">
+        <button type="button" class="modal-close" data-close-modal aria-label="Закрыть">×</button>
+        <h2 id="helpTitle" class="modal-title">Справка — EATSDASH</h2>
+        <p class="help-hint">Закрыть: Esc · Вызов: <kbd>F1</kbd></p>
+
+        <div class="help-body">
+            @if (Model.Audience == HelpAudience.Moderator)
+            {
+                <section class="help-section">
+                    <h3>Роль модератора</h3>
+                    <p>Вы вошли как <strong>модератор</strong>. Доступны все действия обычного пользователя и инструменты модерации.</p>
+                </section>
+                <section class="help-section">
+                    <h3>Главная страница</h3>
+                    <ul>
+                        <li><strong>Модерация</strong> в шапке — очередь отзывов с жалобами.</li>
+                        <li>Круглая иконка профиля — личный кабинет.</li>
+                        <li>Меню «⋯» у чужого отзыва: <strong>Удалить отзыв</strong> или <strong>Заблокировать пользователя</strong> (автор не сможет войти).</li>
+                        <li>Нельзя заблокировать модератора или себя.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Панель модерации</h3>
+                    <ul>
+                        <li><strong>Одобрить</strong> — отзыв снова виден на главной.</li>
+                        <li><strong>Отклонить</strong> — отзыв удаляется безвозвратно.</li>
+                        <li>В карточке отображаются все жалобы пользователей.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Отзывы и реакции</h3>
+                    <ul>
+                        <li>Добавление, редактирование и удаление <strong>своих</strong> отзывов — через «Добавить отзыв» и меню «⋯».</li>
+                        <li>Лайк и дизлайк — кнопки под отзывом (повторное нажатие снимает реакцию).</li>
+                        <li>Жалобу на отзыв можно отправить повторно — отзыв снова попадёт в очередь.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Личный кабинет</h3>
+                    <ul>
+                        <li>Смена никнейма, компактный список отзывов, смена пароля.</li>
+                        <li>Кнопка перехода в панель модерации.</li>
+                    </ul>
+                </section>
+            }
+            else if (Model.Audience == HelpAudience.User)
+            {
+                <section class="help-section">
+                    <h3>Главная страница</h3>
+                    <ul>
+                        <li>Просмотр статистики и последних отзывов о доставке.</li>
+                        <li><strong>Добавить отзыв</strong> — оценка, курьер, текст (до 2000 символов).</li>
+                        <li>Круглая иконка в шапке — личный кабинет.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Отзывы</h3>
+                    <ul>
+                        <li><strong>Лайк / дизлайк</strong> — под чужими отзывами; повторное нажатие отменяет реакцию.</li>
+                        <li>Меню «⋯» у <strong>своего</strong> отзыва: изменить или удалить.</li>
+                        <li>Меню «⋯» у чужого отзыва: <strong>Пожаловаться</strong> — отзыв скрывается и передаётся модератору.</li>
+                        <li>Жалобу на один отзыв можно отправить несколько раз.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Личный кабинет</h3>
+                    <ul>
+                        <li>Изменение никнейма (отображается в отзывах и шапке).</li>
+                        <li><strong>Компактный список отзывов</strong> — меньше отступов на главной.</li>
+                        <li>Смена пароля в разделе «Безопасность».</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Выход</h3>
+                    <p>Кнопка «Выйти» внизу личного кабинета.</p>
+                </section>
+            }
+            else
+            {
+                <section class="help-section">
+                    <h3>Без входа</h3>
+                    <p>Вы можете читать отзывы и статистику. Чтобы оставлять отзывы, ставить реакции и жаловаться — войдите или зарегистрируйтесь.</p>
+                </section>
+                <section class="help-section">
+                    <h3>Вход и регистрация</h3>
+                    <ul>
+                        <li>Кнопка <strong>Войти</strong> в шапке открывает окно входа или регистрации.</li>
+                        <li>Имя пользователя — на русском или английском, от 2 символов.</li>
+                        <li>Пароль — не короче 4 символов.</li>
+                    </ul>
+                </section>
+                <section class="help-section">
+                    <h3>Что доступно после входа</h3>
+                    <ul>
+                        <li>Добавление отзывов с оценкой и выбором курьера.</li>
+                        <li>Лайки и дизлайки, редактирование своих отзывов.</li>
+                        <li>Жалобы на чужие отзывы.</li>
+                        <li>Личный кабинет с настройками.</li>
+                    </ul>
+                </section>
+            }
+
+            <section class="help-section help-section--keys">
+                <h3>Горячие клавиши</h3>
+                <ul>
+                    <li><kbd>F1</kbd> — открыть эту справку (на любой странице сайта).</li>
+                    <li><kbd>Esc</kbd> — закрыть открытое окно.</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</div>
